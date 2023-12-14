@@ -1,0 +1,22 @@
+version: '3'
+
+tasks:
+  dev:
+    cmds:
+      - go run ./...
+    silent: true
+    interactive: true
+  deploy:
+    cmds:
+      - flyctl deploy
+  build:
+    env:
+      GOOS: linux
+      GOARCH: amd64
+      CGO_ENABLED: 0
+    cmds:
+      - go build -ldflags="-s -w" -o ./bin/server ./...
+  release:
+    deps:
+      - build
+      - deploy
