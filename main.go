@@ -7,6 +7,7 @@ import (
 	"github.com/hertz-contrib/cors"
 	"github.com/kkdai/youtube/v2"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 )
@@ -32,8 +33,15 @@ func main() {
 
 	h.GET("/videos/:id", getVideo)
 	h.GET("/stream/:id", streamVideo)
+	h.GET("/healthz", healthCheck)
 
 	h.Spin()
+}
+
+func healthCheck(ctx context.Context, c *app.RequestContext) {
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"status": "ok",
+	})
 }
 
 func getVideo(ctx context.Context, c *app.RequestContext) {
@@ -55,6 +63,20 @@ func getVideo(ctx context.Context, c *app.RequestContext) {
 		c.Error(err)
 		return
 	}
+
+	// get ip of the visitor
+	userIP := string(c.GetHeader("Fly-Client-IP"))
+	// parse the stream url, replace ip with the visitor's ip
+	parsedStreamUrl, err := url.Parse(streamUrl)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	// replace the query param with the visitor's ip
+	query := parsedStreamUrl.Query()
+	query.Set("ip", userIP)
+	parsedStreamUrl.RawQuery = query.Encode()
+	streamUrl = parsedStreamUrl.String()
 
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"downloadUrl": bestFormat.URL,

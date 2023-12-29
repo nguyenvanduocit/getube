@@ -1,0 +1,31 @@
+version: v2beta1
+name: getube-service
+
+pipelines:
+  dev:
+    run: |-
+      start_dev app
+dev:
+  app:
+    labelSelector:
+      app: getube-app
+    logs:
+      lastLines: 50
+    restartHelper:
+      inject: true
+    devImage: ghcr.io/loft-sh/devspace-containers/alpine:3
+    command:
+      - ./server
+    sync:
+      - path: ./bin/server.zip
+        file: true
+        initialSync: mirrorLocal
+        disableDownload: true
+        waitInitialSync: false
+        onUpload:
+          restartContainer: true
+          exec:
+            - command: |-
+                unzip ./bin/server.zip bin/server -d ./
+                chmod +x ./bin/server
+                mv ./bin/server ./server

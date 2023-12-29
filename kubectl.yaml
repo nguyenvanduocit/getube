@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: getube
+  labels:
+    app: getube-app
+spec:
+  selector:
+    matchLabels:
+      app: getube-app
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: getube-app
+      name: getube
+    spec:
+      nodeSelector:
+        division: Compass
+      tolerations:
+        - effect: NoSchedule
+          key: Compass-appnode
+          operator: Exists
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: ghcr-nguyenvanduocit-login-secret
+      containers:
+        - image: ko://github.com/nguyenvanduocit/getube
+          env:
+            - name: PORT
+              value: "8080"
+          name: getube
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: getube-svc
+spec:
+  ports:
+    - name: "8080"
+      port: 8080
+  selector:
+    app: getube-app
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: getube-ingress
+spec:
+  tls:
+    - hosts:
+        - "firegroup.vn"
+      secretName: firegroup-vn-tls-wildcard
+  rules:
+    - host: "getube.firegroup.vn"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: getube-svc
+                port:
+                  number: 8080

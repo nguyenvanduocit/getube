@@ -6,9 +6,21 @@ tasks:
       - go run ./...
     silent: true
     interactive: true
+  dev-k8s:
+    silent: true
+    ignore_error: true
+    cmds:
+      - defer: devspace reset pods
+      - devspace dev
   deploy:
     cmds:
       - flyctl deploy
+  deploy-k8s:
+    silent: true
+    env:
+      KOCACHE: true
+    cmds:
+      - ko apply -f kubectl.yaml
   build:
     env:
       GOOS: linux
@@ -16,6 +28,7 @@ tasks:
       CGO_ENABLED: 0
     cmds:
       - go build -ldflags="-s -w" -o ./bin/server ./...
+      - zip -r ./bin/server.zip ./bin/server
   release:
     deps:
       - build
