@@ -40,6 +40,13 @@ spec:
               port: 8080
             initialDelaySeconds: 3
             periodSeconds: 3
+          resources: # Add this section
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
 ---
 
 apiVersion: v1
