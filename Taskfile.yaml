@@ -2,20 +2,12 @@ version: '3'
 
 tasks:
   dev:
-    cmds:
-      - go run ./...
-    silent: true
-    interactive: true
-  dev-k8s:
     silent: true
     ignore_error: true
     cmds:
       - defer: devspace reset pods
       - devspace dev
   deploy:
-    cmds:
-      - flyctl deploy
-  deploy-k8s:
     silent: true
     env:
       KOCACHE: true

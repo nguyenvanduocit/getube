@@ -67,6 +67,7 @@ kind: Ingress
 metadata:
   name: getube-ingress
 spec:
+  ingressClassName: ingress-nginx-fpt
   tls:
     - hosts:
         - "firegroup.vn"

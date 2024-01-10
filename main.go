@@ -32,10 +32,38 @@ func main() {
 	}))
 
 	h.GET("/videos/:id", getVideo)
+	h.GET("/playlists/:id", getPlaylists)
 	h.GET("/stream/:id", streamVideo)
 	h.GET("/healthz", healthCheck)
 
 	h.Spin()
+}
+
+func getPlaylists(ctx context.Context, c *app.RequestContext) {
+	playlistID := c.Param("id")
+	client := youtube.Client{}
+
+	playlist, err := client.GetPlaylist(playlistID)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	var videos []GetPlaylistVideo
+
+	for _, video := range playlist.Videos {
+		videos = append(videos, GetPlaylistVideo{
+			Title:     video.Title,
+			Thumbnail: video.Thumbnails[0].URL,
+			Id:        video.ID,
+		})
+	}
+
+	// set utf-8 header
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.JSON(http.StatusOK, GetPlaylistResponse{
+		Videos: videos,
+	})
 }
 
 func healthCheck(ctx context.Context, c *app.RequestContext) {
@@ -78,12 +106,29 @@ func getVideo(ctx context.Context, c *app.RequestContext) {
 	parsedStreamUrl.RawQuery = query.Encode()
 	streamUrl = parsedStreamUrl.String()
 
-	c.JSON(http.StatusOK, map[string]interface{}{
-		"downloadUrl": bestFormat.URL,
-		"streamUrl":   streamUrl,
-		"title":       video.Title,
-		"thumbnail":   video.Thumbnails[0].URL,
+	c.JSON(http.StatusOK, GetVideoResponse{
+		DownloadUrl: bestFormat.URL,
+		StreamUrl:   streamUrl,
+		Title:       video.Title,
+		Thumbnail:   video.Thumbnails[0].URL,
 	})
+}
+
+type GetVideoResponse struct {
+	DownloadUrl string `json:"downloadUrl"`
+	StreamUrl   string `json:"streamUrl"`
+	Title       string `json:"title"`
+	Thumbnail   string `json:"thumbnail"`
+}
+
+type GetPlaylistVideo struct {
+	Title     string `json:"title"`
+	Thumbnail string `json:"thumbnail"`
+	Id        string `json:"id"`
+}
+
+type GetPlaylistResponse struct {
+	Videos []GetPlaylistVideo `json:"videos"`
 }
 
 func streamVideo(ctx context.Context, c *app.RequestContext) {
